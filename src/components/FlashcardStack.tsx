@@ -1,42 +1,58 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { RotateCcw, Check, X, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import CardActions from "@/components/CardActions";
 
 interface Flashcard {
   id: number;
-  front: string;
-  back: string;
+  headline: string;
+  content: string;
   category?: string;
+  sourceOffset?: number;
+  deeperContent?: string;
 }
 
 interface FlashcardStackProps {
   cards: Flashcard[];
   currentIndex: number;
-  onCardAnswer: (cardId: number, isCorrect: boolean) => void;
-  answeredCards: Set<number>;
+  onCardView: (cardId: number) => void;
+  viewedCards: Set<number>;
+  bookmarkedCards: Set<number>;
+  onBookmarkToggle: (cardId: number) => void;
+  onDiveDeeper: (cardId: number) => void;
+  onJumpToSource: (cardId: number) => void;
+  onAskAI: (cardId: number, question: string) => void;
+  isDarkMode: boolean;
+  isLargeText: boolean;
 }
 
-const FlashcardStack = ({ cards, currentIndex, onCardAnswer, answeredCards }: FlashcardStackProps) => {
-  const [isFlipped, setIsFlipped] = useState(false);
+const FlashcardStack = ({ 
+  cards, 
+  currentIndex, 
+  onCardView, 
+  viewedCards, 
+  bookmarkedCards,
+  onBookmarkToggle,
+  onDiveDeeper,
+  onJumpToSource,
+  onAskAI,
+  isDarkMode,
+  isLargeText
+}: FlashcardStackProps) => {
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
 
   const currentCard = cards[currentIndex];
-  const isAnswered = answeredCards.has(currentCard?.id);
+  const isViewed = viewedCards.has(currentCard?.id);
+  const isBookmarked = bookmarkedCards.has(currentCard?.id);
 
-  const handleFlip = () => {
-    setIsFlipped(!isFlipped);
-  };
-
-  const handleAnswer = (isCorrect: boolean) => {
-    if (!isAnswered && currentCard) {
-      onCardAnswer(currentCard.id, isCorrect);
-      setIsFlipped(false);
+  // Mark card as viewed when it becomes visible
+  useEffect(() => {
+    if (currentCard && !isViewed) {
+      onCardView(currentCard.id);
     }
-  };
+  }, [currentCard, isViewed, onCardView]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
@@ -60,147 +76,117 @@ const FlashcardStack = ({ cards, currentIndex, onCardAnswer, answeredCards }: Fl
     const distanceY = touchStart.y - touchEnd.y;
     const isLeftSwipe = distanceX > 50;
     const isRightSwipe = distanceX < -50;
-    const isUpSwipe = distanceY > 50;
-    const isDownSwipe = distanceY < -50;
 
     // Only process horizontal swipes if they're more significant than vertical
     if (Math.abs(distanceX) > Math.abs(distanceY)) {
-      if (isFlipped && !isAnswered) {
-        if (isLeftSwipe) {
-          handleAnswer(false); // Swipe left = incorrect
-        } else if (isRightSwipe) {
-          handleAnswer(true); // Swipe right = correct
-        }
+      if (isLeftSwipe) {
+        // Swipe left to go to next card
+        console.log('Next card swipe');
+      } else if (isRightSwipe) {
+        // Swipe right to go to previous card
+        console.log('Previous card swipe');
       }
-    } else if (!isFlipped && isUpSwipe) {
-      // Swipe up to flip card
-      handleFlip();
     }
   };
 
   if (!currentCard) return null;
 
+  const textSizeClass = isLargeText ? 'text-lg' : 'text-base';
+  const headlineSizeClass = isLargeText ? 'text-xl' : 'text-lg';
+
   return (
     <div className="relative">
       {/* Main Card */}
       <div
-        className="relative h-96 perspective-1000"
+        className="relative h-96"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div
-          className={cn(
-            "relative w-full h-full transition-transform duration-500 transform-style-preserve-3d cursor-pointer",
-            isFlipped && "rotate-y-180"
-          )}
-          onClick={handleFlip}
-        >
-          {/* Front of Card */}
-          <Card className={cn(
-            "absolute inset-0 backface-hidden border-0 shadow-2xl",
-            "bg-gradient-to-br from-white to-blue-50",
-            isAnswered && "opacity-75"
-          )}>
-            <CardContent className="p-6 h-full flex flex-col justify-between">
-              <div className="flex justify-between items-start mb-4">
-                {currentCard.category && (
-                  <span className="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
-                    {currentCard.category}
-                  </span>
-                )}
-                <div className="flex items-center text-gray-400">
-                  <Eye className="w-4 h-4 mr-1" />
-                  <span className="text-xs">Tap to flip</span>
-                </div>
-              </div>
-              
-              <div className="flex-1 flex items-center justify-center text-center">
-                <p className="text-lg font-medium text-gray-800 leading-relaxed">
-                  {currentCard.front}
-                </p>
-              </div>
-              
-              <div className="text-center">
-                <p className="text-xs text-gray-500">
-                  Swipe up or tap to reveal answer
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Back of Card */}
-          <Card className={cn(
-            "absolute inset-0 backface-hidden rotate-y-180 border-0 shadow-2xl",
-            "bg-gradient-to-br from-white to-green-50",
-            isAnswered && "opacity-75"
-          )}>
-            <CardContent className="p-6 h-full flex flex-col justify-between">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center text-green-600">
-                  <EyeOff className="w-4 h-4 mr-1" />
-                  <span className="text-xs font-medium">Answer</span>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleFlip();
-                  }}
-                  className="p-1 text-gray-400 hover:text-gray-600"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </button>
-              </div>
-              
-              <div className="flex-1 flex items-center justify-center text-center">
-                <p className="text-base text-gray-700 leading-relaxed">
-                  {currentCard.back}
-                </p>
-              </div>
-              
-              {!isAnswered && (
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 mb-3">
-                    Swipe right (✓) or left (✗) to answer
-                  </p>
-                </div>
+        <Card className={cn(
+          "w-full h-full border-0 shadow-2xl transition-all duration-200",
+          isDarkMode 
+            ? "bg-gradient-to-br from-gray-800 to-gray-900 text-gray-100" 
+            : "bg-gradient-to-br from-white to-blue-50",
+          isViewed && "opacity-95"
+        )}>
+          <CardContent className="p-6 h-full flex flex-col">
+            <div className="flex justify-between items-start mb-4">
+              {currentCard.category && (
+                <span className={cn(
+                  "px-3 py-1 text-xs font-medium rounded-full",
+                  isDarkMode
+                    ? "bg-purple-900/50 text-purple-300"
+                    : "bg-purple-100 text-purple-700"
+                )}>
+                  {currentCard.category}
+                </span>
               )}
-            </CardContent>
-          </Card>
-        </div>
+              <div className={cn(
+                "text-xs opacity-60",
+                isDarkMode ? "text-gray-400" : "text-gray-500"
+              )}>
+                Swipe to navigate
+              </div>
+            </div>
+            
+            {/* Headline */}
+            <h2 className={cn(
+              "font-semibold mb-4 leading-tight",
+              headlineSizeClass,
+              isDarkMode ? "text-gray-100" : "text-gray-800"
+            )}>
+              {currentCard.headline}
+            </h2>
+            
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+              <p className={cn(
+                "leading-reading",
+                textSizeClass,
+                isDarkMode ? "text-gray-200" : "text-gray-700"
+              )}>
+                {currentCard.content}
+              </p>
+            </div>
+            
+            {/* Card Actions */}
+            <CardActions
+              cardId={currentCard.id}
+              isBookmarked={isBookmarked}
+              onBookmarkToggle={onBookmarkToggle}
+              onDiveDeeper={onDiveDeeper}
+              onJumpToSource={onJumpToSource}
+              onAskAI={onAskAI}
+              deeperContent={currentCard.deeperContent}
+            />
+            
+            <div className={cn(
+              "text-center text-xs mt-3 opacity-60",
+              isDarkMode ? "text-gray-400" : "text-gray-500"
+            )}>
+              ≈ {Math.ceil(currentCard.content.split(' ').length / 200)} min read
+            </div>
+          </CardContent>
+        </Card>
       </div>
-
-      {/* Answer Buttons */}
-      {isFlipped && !isAnswered && (
-        <div className="flex gap-4 mt-6">
-          <Button
-            onClick={() => handleAnswer(false)}
-            variant="outline"
-            className="flex-1 py-6 border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
-          >
-            <X className="w-5 h-5 mr-2" />
-            Incorrect
-          </Button>
-          <Button
-            onClick={() => handleAnswer(true)}
-            className="flex-1 py-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-          >
-            <Check className="w-5 h-5 mr-2" />
-            Correct
-          </Button>
-        </div>
-      )}
 
       {/* Next Cards Preview */}
       {currentIndex < cards.length - 1 && (
         <div className="absolute top-2 left-2 right-2 h-96 -z-10">
-          <Card className="w-full h-full bg-white/60 border-0 shadow-lg transform rotate-1 scale-95" />
+          <Card className={cn(
+            "w-full h-full border-0 shadow-lg transform rotate-1 scale-95",
+            isDarkMode ? "bg-gray-800/60" : "bg-white/60"
+          )} />
         </div>
       )}
       
       {currentIndex < cards.length - 2 && (
         <div className="absolute top-4 left-4 right-4 h-96 -z-20">
-          <Card className="w-full h-full bg-white/40 border-0 shadow-md transform -rotate-1 scale-90" />
+          <Card className={cn(
+            "w-full h-full border-0 shadow-md transform -rotate-1 scale-90",
+            isDarkMode ? "bg-gray-800/40" : "bg-white/40"
+          )} />
         </div>
       )}
     </div>
