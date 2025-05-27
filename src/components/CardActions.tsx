@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Share, MessageCircle, Bookmark, BookOpen } from "lucide-react";
+import { ExternalLink, MessageCircle, Bookmark, BookOpen } from "lucide-react";
 import { useState } from "react";
 
 interface CardActionsProps {
@@ -88,7 +88,7 @@ const CardActions = ({
         onClick={() => onJumpToSource(cardId)}
         className="text-gray-400 hover:text-green-600 flex flex-col items-center gap-1 h-auto py-2"
       >
-        <Share className="w-4 h-4" />
+        <ExternalLink className="w-4 h-4" />
         <span className="text-xs">Source</span>
       </Button>
 
