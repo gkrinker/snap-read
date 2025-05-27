@@ -5,9 +5,10 @@ interface ProgressBarProps {
   current: number;
   total: number;
   answered: number;
+  readingTime: number;
 }
 
-const ProgressBar = ({ current, total, answered }: ProgressBarProps) => {
+const ProgressBar = ({ current, total, answered, readingTime }: ProgressBarProps) => {
   const progressPercentage = (current / total) * 100;
   const answeredPercentage = (answered / total) * 100;
 
@@ -15,7 +16,10 @@ const ProgressBar = ({ current, total, answered }: ProgressBarProps) => {
     <div className="px-4 pb-3">
       <div className="flex justify-between text-xs text-gray-600 mb-2">
         <span>Progress</span>
-        <span>{answered} / {total} answered</span>
+        <div className="flex items-center space-x-4">
+          <span>≈ {readingTime} min read</span>
+          <span>{answered} / {total} answered</span>
+        </div>
       </div>
       
       <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">

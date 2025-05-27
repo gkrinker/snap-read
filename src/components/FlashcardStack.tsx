@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -46,7 +45,6 @@ const FlashcardStack = ({
   const currentCard = cards[currentIndex];
   const isViewed = viewedCards.has(currentCard?.id);
   const isBookmarked = bookmarkedCards.has(currentCard?.id);
-  const remainingCards = cards.length - currentIndex - 1;
 
   // Mark card as viewed when it becomes visible
   useEffect(() => {
@@ -151,14 +149,6 @@ const FlashcardStack = ({
               onAskAI={onAskAI}
               deeperContent={currentCard.deeperContent}
             />
-            
-            <div className={cn(
-              "text-center text-xs mt-3 opacity-60 flex justify-between items-center",
-              isDarkMode ? "text-gray-400" : "text-gray-500"
-            )}>
-              <span>≈ {Math.ceil(currentCard.content.split(' ').length / 200)} min read</span>
-              <span>{remainingCards} cards remaining</span>
-            </div>
           </CardContent>
         </Card>
       </div>

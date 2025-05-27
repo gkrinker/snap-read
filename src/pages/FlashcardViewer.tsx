@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -149,6 +150,7 @@ const FlashcardViewer = () => {
   };
 
   const isSessionComplete = viewedCards.size === flashcards.length;
+  const currentCard = flashcards[currentIndex];
 
   return (
     <div className={`min-h-screen font-lexend ${isDarkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100'}`}>
@@ -169,9 +171,6 @@ const FlashcardViewer = () => {
             <h1 className={`font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'} truncate`}>
               {fileName}
             </h1>
-            <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              {currentIndex + 1} of {flashcards.length}
-            </p>
           </div>
           
           <div className="flex items-center space-x-2">
@@ -200,6 +199,7 @@ const FlashcardViewer = () => {
           current={currentIndex + 1}
           total={flashcards.length}
           answered={viewedCards.size}
+          readingTime={currentCard ? Math.ceil(currentCard.content.split(' ').length / 200) : 0}
         />
       </div>
 
