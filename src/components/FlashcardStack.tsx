@@ -46,6 +46,7 @@ const FlashcardStack = ({
   const currentCard = cards[currentIndex];
   const isViewed = viewedCards.has(currentCard?.id);
   const isBookmarked = bookmarkedCards.has(currentCard?.id);
+  const remainingCards = cards.length - currentIndex - 1;
 
   // Mark card as viewed when it becomes visible
   useEffect(() => {
@@ -111,17 +112,7 @@ const FlashcardStack = ({
           isViewed && "opacity-95"
         )}>
           <CardContent className="p-6 h-full flex flex-col">
-            <div className="flex justify-between items-start mb-4">
-              {currentCard.category && (
-                <span className={cn(
-                  "px-3 py-1 text-xs font-medium rounded-full",
-                  isDarkMode
-                    ? "bg-purple-900/50 text-purple-300"
-                    : "bg-purple-100 text-purple-700"
-                )}>
-                  {currentCard.category}
-                </span>
-              )}
+            <div className="flex justify-end items-start mb-4">
               <div className={cn(
                 "text-xs opacity-60",
                 isDarkMode ? "text-gray-400" : "text-gray-500"
@@ -139,8 +130,8 @@ const FlashcardStack = ({
               {currentCard.headline}
             </h2>
             
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto">
+            {/* Content - with scrollable overflow */}
+            <div className="flex-1 overflow-y-auto mb-4">
               <p className={cn(
                 "leading-reading",
                 textSizeClass,
@@ -162,10 +153,11 @@ const FlashcardStack = ({
             />
             
             <div className={cn(
-              "text-center text-xs mt-3 opacity-60",
+              "text-center text-xs mt-3 opacity-60 flex justify-between items-center",
               isDarkMode ? "text-gray-400" : "text-gray-500"
             )}>
-              ≈ {Math.ceil(currentCard.content.split(' ').length / 200)} min read
+              <span>≈ {Math.ceil(currentCard.content.split(' ').length / 200)} min read</span>
+              <span>{remainingCards} cards remaining</span>
             </div>
           </CardContent>
         </Card>

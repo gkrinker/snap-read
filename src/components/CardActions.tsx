@@ -44,15 +44,16 @@ const CardActions = ({
   };
 
   return (
-    <div className="flex items-center justify-center space-x-2 mt-4">
+    <div className="grid grid-cols-4 gap-2">
       {/* Bookmark Button */}
       <Button
         variant="ghost"
         size="sm"
         onClick={() => onBookmarkToggle(cardId)}
-        className={`${isBookmarked ? 'text-yellow-600' : 'text-gray-400'} hover:text-yellow-600`}
+        className={`${isBookmarked ? 'text-yellow-600' : 'text-gray-400'} hover:text-yellow-600 flex flex-col items-center gap-1 h-auto py-2`}
       >
         <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
+        <span className="text-xs">Save</span>
       </Button>
 
       {/* Dive Deeper */}
@@ -62,9 +63,10 @@ const CardActions = ({
             variant="ghost"
             size="sm"
             onClick={() => onDiveDeeper(cardId)}
-            className="text-gray-400 hover:text-blue-600"
+            className="text-gray-400 hover:text-blue-600 flex flex-col items-center gap-1 h-auto py-2"
           >
             <ChevronDown className="w-4 h-4" />
+            <span className="text-xs">Deeper</span>
           </Button>
         </SheetTrigger>
         <SheetContent side="bottom" className="h-[60vh]">
@@ -84,9 +86,10 @@ const CardActions = ({
         variant="ghost"
         size="sm"
         onClick={() => onJumpToSource(cardId)}
-        className="text-gray-400 hover:text-green-600"
+        className="text-gray-400 hover:text-green-600 flex flex-col items-center gap-1 h-auto py-2"
       >
         <ExternalLink className="w-4 h-4" />
+        <span className="text-xs">Source</span>
       </Button>
 
       {/* Ask AI */}
@@ -95,9 +98,10 @@ const CardActions = ({
           <Button
             variant="ghost"
             size="sm"
-            className="text-gray-400 hover:text-purple-600"
+            className="text-gray-400 hover:text-purple-600 flex flex-col items-center gap-1 h-auto py-2"
           >
             <MessageCircle className="w-4 h-4" />
+            <span className="text-xs">Ask AI</span>
           </Button>
         </SheetTrigger>
         <SheetContent side="bottom" className="h-[60vh]">
