@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -93,6 +94,12 @@ const FlashcardStack = ({
   const textSizeClass = isLargeText ? 'text-lg' : 'text-base';
   const headlineSizeClass = isLargeText ? 'text-xl' : 'text-lg';
 
+  // Truncate content to prevent scrollbars - limit to approximately 8-10 lines
+  const maxContentLength = isLargeText ? 400 : 500;
+  const truncatedContent = currentCard.content.length > maxContentLength 
+    ? currentCard.content.substring(0, maxContentLength) + "..."
+    : currentCard.content;
+
   return (
     <div className="relative">
       {/* Main Card */}
@@ -128,14 +135,14 @@ const FlashcardStack = ({
               {currentCard.headline}
             </h2>
             
-            {/* Content - with scrollable overflow */}
-            <div className="flex-1 overflow-y-auto mb-4">
+            {/* Content - fixed height with no scroll */}
+            <div className="flex-1 mb-4">
               <p className={cn(
-                "leading-reading",
+                "leading-relaxed",
                 textSizeClass,
                 isDarkMode ? "text-gray-200" : "text-gray-700"
               )}>
-                {currentCard.content}
+                {truncatedContent}
               </p>
             </div>
             

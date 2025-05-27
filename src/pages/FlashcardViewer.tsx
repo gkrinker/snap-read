@@ -152,6 +152,9 @@ const FlashcardViewer = () => {
   const isSessionComplete = viewedCards.size === flashcards.length;
   const currentCard = flashcards[currentIndex];
 
+  // Truncate filename for mobile display
+  const truncatedFileName = fileName.length > 20 ? fileName.substring(0, 20) + "..." : fileName;
+
   return (
     <div className={`min-h-screen font-lexend ${isDarkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100'}`}>
       {/* Header */}
@@ -161,19 +164,19 @@ const FlashcardViewer = () => {
             variant="ghost"
             size="sm"
             onClick={() => navigate("/")}
-            className={`${isDarkMode ? 'text-gray-300 hover:text-gray-100' : 'text-gray-600 hover:text-gray-800'}`}
+            className={`${isDarkMode ? 'text-gray-300 hover:text-gray-100' : 'text-gray-600 hover:text-gray-800'} flex-shrink-0`}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
           
-          <div className="text-center flex-1 mx-4">
+          <div className="text-center flex-1 mx-4 min-w-0">
             <h1 className={`font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'} truncate`}>
-              {fileName}
+              {truncatedFileName}
             </h1>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             <SettingsDrawer
               cardCount={cardCount}
               onCardCountChange={setCardCount}
