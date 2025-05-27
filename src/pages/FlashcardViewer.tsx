@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -234,10 +233,6 @@ const FlashcardViewer = () => {
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Previous
               </Button>
-              
-              <div className={`text-sm ${isDarkMode ? 'text-gray-300 bg-gray-800/60' : 'text-gray-600 bg-white/60'} px-3 py-1 rounded-full`}>
-                {viewedCards.size} viewed
-              </div>
               
               <Button
                 variant="outline"
