@@ -1,30 +1,37 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import CardActions from "@/components/CardActions";
+import { Button } from "@/components/ui/button";
+import { Bookmark, BookmarkCheck, ChevronDown, ChevronUp, ExternalLink, MessageSquare } from "lucide-react";
 
+/**
+ * Interface defining the structure of a flashcard
+ */
 interface Flashcard {
-  id: number;
-  headline: string;
-  content: string;
-  category?: string;
-  sourceOffset?: number;
-  deeperContent?: string;
+  id: number;              // Unique identifier for the card
+  headline: string;        // Main title of the card
+  content: string;         // Main content of the card
+  category?: string;       // Optional category for organization
+  sourceOffset?: number;   // Optional reference to source document
+  deeperContent?: string;  // Optional additional content for deeper learning
 }
 
+/**
+ * Props interface for the FlashcardStack component
+ */
 interface FlashcardStackProps {
-  cards: Flashcard[];
-  currentIndex: number;
-  onCardView: (cardId: number) => void;
-  viewedCards: Set<number>;
-  bookmarkedCards: Set<number>;
-  onBookmarkToggle: (cardId: number) => void;
-  onDiveDeeper: (cardId: number) => void;
-  onJumpToSource: (cardId: number) => void;
-  onAskAI: (cardId: number, question: string) => void;
-  isDarkMode: boolean;
-  isLargeText: boolean;
+  cards: Flashcard[];                    // Array of flashcards to display
+  currentIndex: number;                  // Index of the current card
+  onCardView: (cardId: number) => void;  // Callback when a card is viewed
+  viewedCards: Set<number>;              // Set of viewed card IDs
+  bookmarkedCards: Set<number>;          // Set of bookmarked card IDs
+  onBookmarkToggle: (cardId: number) => void;  // Callback for bookmark toggle
+  onDiveDeeper: (cardId: number) => void;      // Callback for diving deeper
+  onJumpToSource: (cardId: number) => void;    // Callback for jumping to source
+  onAskAI: (cardId: number, question: string) => void;  // Callback for AI questions
+  isDarkMode: boolean;                   // Dark mode state
+  isLargeText: boolean;                  // Text size state
 }
 
 const FlashcardStack = ({ 
@@ -42,6 +49,8 @@ const FlashcardStack = ({
 }: FlashcardStackProps) => {
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
+  const [expandedContent, setExpandedContent] = useState<Set<number>>(new Set());
+  const [aiQuestion, setAiQuestion] = useState("");
 
   const currentCard = cards[currentIndex];
   const isViewed = viewedCards.has(currentCard?.id);
@@ -86,6 +95,33 @@ const FlashcardStack = ({
         // Swipe right to go to previous card
         console.log('Previous card swipe');
       }
+    }
+  };
+
+  /**
+   * Toggles the expanded state of a card's content
+   * @param cardId - ID of the card to toggle
+   */
+  const toggleExpand = (cardId: number) => {
+    setExpandedContent(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardId)) {
+        newSet.delete(cardId);
+      } else {
+        newSet.add(cardId);
+      }
+      return newSet;
+    });
+  };
+
+  /**
+   * Handles AI question submission
+   * @param cardId - ID of the card being questioned
+   */
+  const handleAskAI = (cardId: number) => {
+    if (aiQuestion.trim()) {
+      onAskAI(cardId, aiQuestion);
+      setAiQuestion("");
     }
   };
 

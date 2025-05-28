@@ -1,45 +1,54 @@
-
 import { cn } from "@/lib/utils";
 
+/**
+ * Props interface for the ProgressBar component
+ */
 interface ProgressBarProps {
-  current: number;
-  total: number;
-  answered: number;
-  readingTime: number;
+  current: number;      // Current progress value
+  total: number;        // Total number of items
+  answered: number;     // Number of answered items
+  readingTime: number;  // Estimated reading time in minutes
 }
 
+/**
+ * ProgressBar component
+ * Displays progress information including completion status and reading time
+ */
 const ProgressBar = ({ current, total, answered, readingTime }: ProgressBarProps) => {
-  const progressPercentage = (current / total) * 100;
-  const answeredPercentage = (answered / total) * 100;
+  // Calculate progress percentage
+  const progress = (current / total) * 100;
+  
+  // Calculate completion percentage
+  const completion = (answered / total) * 100;
 
   return (
-    <div className="px-4 pb-3">
-      <div className="flex justify-between text-xs text-gray-600 mb-2">
-        <span>Progress</span>
-        <div className="flex items-center space-x-4">
-          <span>≈ {readingTime} min read</span>
-          <span>{answered} / {total} answered</span>
-        </div>
+    <div className="px-4 py-2">
+      {/* Progress bar container */}
+      <div className="relative h-1 bg-gray-200 rounded-full overflow-hidden">
+        {/* Progress indicator */}
+        <div
+          className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-600 to-blue-600 transition-all duration-300"
+          style={{ width: `${progress}%` }}
+        />
+        
+        {/* Completion indicator */}
+        <div
+          className="absolute top-0 left-0 h-full bg-gray-400 transition-all duration-300"
+          style={{ width: `${completion}%` }}
+        />
       </div>
-      
-      <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-        {/* Answered progress (green) */}
-        <div
-          className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-400 to-green-500 transition-all duration-300 ease-out"
-          style={{ width: `${answeredPercentage}%` }}
-        />
+
+      {/* Progress information */}
+      <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+        {/* Current progress */}
+        <span>
+          {current} of {total}
+        </span>
         
-        {/* Current position indicator */}
-        <div
-          className="absolute top-0 h-full w-1 bg-white shadow-sm transition-all duration-300 ease-out"
-          style={{ left: `${progressPercentage}%` }}
-        />
-        
-        {/* Overall progress track */}
-        <div
-          className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-300 to-purple-300 opacity-30 transition-all duration-300 ease-out"
-          style={{ width: `${progressPercentage}%` }}
-        />
+        {/* Reading time estimate */}
+        <span>
+          {readingTime} min read
+        </span>
       </div>
     </div>
   );
