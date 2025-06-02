@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Upload, FileText, BookOpen, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FileUpload from "@/components/FileUpload";
+import { processDocument, Flashcard } from "@/services/documentProcessor";
 
 /**
  * Home page component of the application
@@ -16,6 +17,9 @@ const Index = () => {
   // State for tracking file processing status
   const [isProcessing, setIsProcessing] = useState(false);
   
+  // State for tracking processing progress
+  const [processingProgress, setProcessingProgress] = useState(0);
+  
   // Hook for programmatic navigation
   const navigate = useNavigate();
 
@@ -24,17 +28,41 @@ const Index = () => {
    * @param file - The file uploaded by the user
    */
   const handleFileUpload = async (file: File) => {
-    // Store the uploaded file
-    setUploadedFile(file);
-    // Set processing state to true
-    setIsProcessing(true);
-    
-    // Simulate processing time (2 seconds)
-    setTimeout(() => {
+    try {
+      console.log('Starting file upload process for:', file.name);
+      setUploadedFile(file);
+      setIsProcessing(true);
+      setProcessingProgress(0);
+
+      console.log('Processing document...');
+      const flashcards = await processDocument(file);
+      console.log('Document processed successfully. Generated flashcards:', flashcards.length);
+
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setProcessingProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      console.log('Navigating to flashcards view...');
+      navigate("/flashcards", { 
+        state: { 
+          fileName: file.name,
+          flashcards 
+        } 
+      });
+    } catch (error) {
+      console.error('Error processing document:', error);
+      // Show error message to user
+      alert(`Error processing document: ${error.message}`);
       setIsProcessing(false);
-      // Navigate to flashcards page with file information
-      navigate("/flashcards", { state: { fileName: file.name } });
-    }, 2000);
+      setUploadedFile(null);
+    }
   };
 
   return (
@@ -162,7 +190,10 @@ const Index = () => {
               </p>
               {/* Progress bar */}
               <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full animate-pulse w-3/4"></div>
+                <div 
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${processingProgress}%` }}
+                ></div>
               </div>
             </CardContent>
           </Card>
