@@ -127,4 +127,23 @@ export async function processDocument(file: File): Promise<Flashcard[]> {
   } else {
     throw new Error('Unsupported file type');
   }
+}
+
+/**
+ * Send a PDF file to the backend for flashcard generation using the Assistants API
+ * @param file - The PDF file to process
+ * @returns Promise<Flashcard[]> - Array of processed flashcards
+ */
+export async function processPDFWithBackend(file: File): Promise<Flashcard[]> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch('http://localhost:3001/api/flashcards-from-pdf', {
+    method: 'POST',
+    body: formData,
+  });
+  if (!response.ok) {
+    throw new Error('Failed to process PDF with backend');
+  }
+  const data = await response.json();
+  return data.flashcards || [];
 } 

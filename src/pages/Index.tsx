@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Upload, FileText, BookOpen, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FileUpload from "@/components/FileUpload";
-import { processDocument, Flashcard } from "@/services/documentProcessor";
+import { processDocument, Flashcard, processPDFWithBackend } from "@/services/documentProcessor";
 
 /**
  * Home page component of the application
@@ -34,8 +34,14 @@ const Index = () => {
       setIsProcessing(true);
       setProcessingProgress(0);
 
-      console.log('Processing document...');
-      const flashcards = await processDocument(file);
+      let flashcards: Flashcard[] = [];
+      if (file.type === 'application/pdf') {
+        // Use backend for PDF processing
+        flashcards = await processPDFWithBackend(file);
+      } else {
+        // Use local processing for DOCX or fallback
+        flashcards = await processDocument(file);
+      }
       console.log('Document processed successfully. Generated flashcards:', flashcards.length);
 
       // Simulate progress updates
