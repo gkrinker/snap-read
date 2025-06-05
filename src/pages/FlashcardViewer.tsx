@@ -202,43 +202,43 @@ const FlashcardViewer = () => {
         {!isSessionComplete ? (
           <>
             {/* Flashcard stack component */}
-            <FlashcardStack
-              cards={flashcards}
-              currentIndex={currentIndex}
-              onCardView={handleCardView}
-              viewedCards={viewedCards}
-              bookmarkedCards={bookmarkedCards}
-              onBookmarkToggle={handleBookmarkToggle}
-              onDiveDeeper={handleDiveDeeper}
-              onJumpToSource={handleJumpToSource}
-              onAskAI={handleAskAI}
-              isDarkMode={isDarkMode}
-              isLargeText={isLargeText}
-            />
-            
-            {/* Navigation controls */}
-            <div className="flex justify-between items-center mt-6">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToPrevious}
-                disabled={currentIndex === 0}
-                className={`${isDarkMode ? 'bg-gray-800/80 text-gray-300 border-gray-600' : 'bg-white/80'} backdrop-blur-sm`}
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Previous
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToNext}
-                disabled={currentIndex === flashcards.length - 1}
-                className={`${isDarkMode ? 'bg-gray-800/80 text-gray-300 border-gray-600' : 'bg-white/80'} backdrop-blur-sm`}
-              >
-                Next
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
+            <div className="relative">
+              <FlashcardStack
+                cards={flashcards}
+                currentIndex={currentIndex}
+                setCurrentIndex={setCurrentIndex}
+                onCardView={handleCardView}
+                viewedCards={viewedCards}
+                bookmarkedCards={bookmarkedCards}
+                onBookmarkToggle={handleBookmarkToggle}
+                onDiveDeeper={handleDiveDeeper}
+                onJumpToSource={handleJumpToSource}
+                onAskAI={handleAskAI}
+                isDarkMode={isDarkMode}
+                isLargeText={isLargeText}
+              />
+              <div className="flex justify-between items-center mt-6 px-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToPrevious}
+                  disabled={currentIndex === 0}
+                  className={`${isDarkMode ? 'bg-gray-800/80 text-gray-300 border-gray-600' : 'bg-white/80'} backdrop-blur-sm`}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToNext}
+                  disabled={currentIndex === flashcards.length - 1}
+                  className={`${isDarkMode ? 'bg-gray-800/80 text-gray-300 border-gray-600' : 'bg-white/80'} backdrop-blur-sm`}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
             </div>
           </>
         ) : (

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Quote, MessageCircle, Bookmark, BookOpen } from "lucide-react";
@@ -44,18 +43,7 @@ const CardActions = ({
   };
 
   return (
-    <div className="grid grid-cols-4 gap-2">
-      {/* Bookmark Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => onBookmarkToggle(cardId)}
-        className={`${isBookmarked ? 'text-yellow-600' : 'text-gray-400'} hover:text-yellow-600 flex flex-col items-center gap-1 h-auto py-2`}
-      >
-        <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
-        <span className="text-xs">Save</span>
-      </Button>
-
+    <div className="grid grid-cols-3 gap-2">
       {/* Dive Deeper */}
       <Sheet open={isDeeperOpen} onOpenChange={setIsDeeperOpen}>
         <SheetTrigger asChild>

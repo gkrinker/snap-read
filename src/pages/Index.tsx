@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, FileText, BookOpen, Sparkles } from "lucide-react";
+import { Upload, FileText, BookOpen, Sparkles, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FileUpload from "@/components/FileUpload";
 import { processDocument, Flashcard, processPDFWithBackend } from "@/services/documentProcessor";
@@ -19,6 +19,12 @@ const Index = () => {
   
   // State for tracking processing progress
   const [processingProgress, setProcessingProgress] = useState(0);
+
+  // State for prompt settings
+  const [isPromptSettingsVisible, setIsPromptSettingsVisible] = useState(false);
+  const [flashcardPrompt, setFlashcardPrompt] = useState(
+    `Generate a series of flashcards based on the following text. Each flashcard should have a clear 'headline' (a question or key term) and a concise 'content' (the answer or explanation). Focus on the most important facts, definitions, and concepts. Make sure the content is succinct and easy to understand.\n\nText:\n{document_text_placeholder}`
+  );
   
   // Hook for programmatic navigation
   const navigate = useNavigate();
@@ -98,6 +104,40 @@ const Index = () => {
 
       {/* Main content section */}
       <div className="px-4 py-8 max-w-lg mx-auto">
+        {/* Prompt Settings Button and Editor Section */}
+        <div className="mb-6">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPromptSettingsVisible(!isPromptSettingsVisible)}
+            className="flex items-center space-x-2 mb-4 bg-white/80 hover:bg-white/100 backdrop-blur-sm shadow-sm text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
+          >
+            <Settings className="w-4 h-4" />
+            <span>{isPromptSettingsVisible ? "Hide" : "Show"} Prompt Settings</span>
+          </Button>
+
+          {isPromptSettingsVisible && (
+            <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm mb-6">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                  Customize Flashcard Generation Prompt
+                </h3>
+                <textarea
+                  value={flashcardPrompt}
+                  onChange={(e) => setFlashcardPrompt(e.target.value)}
+                  rows={10}
+                  className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 text-sm font-lexend bg-white"
+                  placeholder="Enter your custom prompt here..."
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Your document's text will be processed using this prompt. 
+                  If your prompt includes the placeholder `'{'{document_text_placeholder}'}'`, the document text will be inserted there. Otherwise, it will be appended to your prompt.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
         {/* Show upload section if no file is uploaded and not processing */}
         {!uploadedFile && !isProcessing && (
           <>

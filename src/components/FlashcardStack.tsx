@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import CardActions from "@/components/CardActions";
@@ -23,6 +23,7 @@ interface Flashcard {
 interface FlashcardStackProps {
   cards: Flashcard[];                    // Array of flashcards to display
   currentIndex: number;                  // Index of the current card
+  setCurrentIndex: (index: number) => void;  // Function to update current index
   onCardView: (cardId: number) => void;  // Callback when a card is viewed
   viewedCards: Set<number>;              // Set of viewed card IDs
   bookmarkedCards: Set<number>;          // Set of bookmarked card IDs
@@ -36,7 +37,8 @@ interface FlashcardStackProps {
 
 const FlashcardStack = ({ 
   cards, 
-  currentIndex, 
+  currentIndex,
+  setCurrentIndex,
   onCardView, 
   viewedCards, 
   bookmarkedCards,
@@ -47,12 +49,22 @@ const FlashcardStack = ({
   isDarkMode,
   isLargeText
 }: FlashcardStackProps) => {
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
-  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number; time: number } | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number; time: number } | null>(null);
+  const [cardPosition, setCardPosition] = useState({ x: 0, y: 0, rotation: 0, scale: 1 });
+  const [nextCardPosition, setNextCardPosition] = useState({ x: window.innerWidth, y: 0, rotation: 0, scale: 1 });
+  const [prevCardPosition, setPrevCardPosition] = useState({ x: -window.innerWidth, y: 0, rotation: 0, scale: 1 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const [expandedContent, setExpandedContent] = useState<Set<number>>(new Set());
   const [aiQuestion, setAiQuestion] = useState("");
+  const cardRef = useRef<HTMLDivElement>(null);
+  const currentCardElementRef = useRef<HTMLDivElement>(null);
+  const [transitionSpeed, setTransitionSpeed] = useState('0.3s');
 
   const currentCard = cards[currentIndex];
+  const nextCard = currentIndex < cards.length - 1 ? cards[currentIndex + 1] : null;
+  const prevCard = currentIndex > 0 ? cards[currentIndex - 1] : null;
   const isViewed = viewedCards.has(currentCard?.id);
   const isBookmarked = bookmarkedCards.has(currentCard?.id);
 
@@ -63,39 +75,156 @@ const FlashcardStack = ({
     }
   }, [currentCard, isViewed, onCardView]);
 
+  // Effect to restore transition speed after animation/snapping
+  useEffect(() => {
+    if (!isAnimating) {
+      // Set a micro-delay to ensure state changes from setTimeout have propagated
+      const timer = setTimeout(() => setTransitionSpeed('0.3s'), 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isAnimating]);
+
+  // Effect to synchronize swipe container height with the current card's height
+  useEffect(() => {
+    if (currentCardElementRef.current && cardRef.current) {
+      const currentCardHeight = currentCardElementRef.current.offsetHeight;
+      if (currentCardHeight > 0) {
+        cardRef.current.style.height = `${currentCardHeight}px`;
+      }
+    }
+  }, [currentIndex, cards, isLargeText, currentCard, transitionSpeed]);
+
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (isAnimating) return;
     setTouchEnd(null);
     setTouchStart({
       x: e.targetTouches[0].clientX,
       y: e.targetTouches[0].clientY,
+      time: Date.now()
     });
+    setIsDragging(true);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStart || isAnimating) return;
+    
+    const currentX = e.targetTouches[0].clientX;
+    const currentY = e.targetTouches[0].clientY;
+    const deltaX = currentX - touchStart.x;
+    const deltaY = currentY - touchStart.y;
+    
+    // Calculate rotation and scale based on horizontal movement
+    const rotation = deltaX * 0.1;
+    const scale = 1 - Math.abs(deltaX) * 0.001; // Scale down as card moves
+    
+    // Update current card position
+    setCardPosition({
+      x: deltaX,
+      y: deltaY * 0.3,
+      rotation,
+      scale: Math.max(0.8, scale)
+    });
+    
+    // Update next/previous card positions based on drag direction
+    if (deltaX < 0 && nextCard) {
+      // Dragging left, bring in next card
+      setNextCardPosition({
+        x: window.innerWidth + deltaX,
+        y: 0,
+        rotation: 0,
+        scale: 1
+      });
+      setPrevCardPosition({
+        x: -window.innerWidth,
+        y: 0,
+        rotation: 0,
+        scale: 1
+      });
+    } else if (deltaX > 0 && prevCard) {
+      // Dragging right, bring in previous card
+      setPrevCardPosition({
+        x: -window.innerWidth + deltaX,
+        y: 0,
+        rotation: 0,
+        scale: 1
+      });
+      setNextCardPosition({
+        x: window.innerWidth,
+        y: 0,
+        rotation: 0,
+        scale: 1
+      });
+    }
+    
     setTouchEnd({
-      x: e.targetTouches[0].clientX,
-      y: e.targetTouches[0].clientY,
+      x: currentX,
+      y: currentY,
+      time: Date.now()
     });
   };
 
   const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+    if (!touchStart || !touchEnd || isAnimating) return;
     
-    const distanceX = touchStart.x - touchEnd.x;
-    const distanceY = touchStart.y - touchEnd.y;
-    const isLeftSwipe = distanceX > 50;
-    const isRightSwipe = distanceX < -50;
+    const deltaX = touchEnd.x - touchStart.x;
+    const deltaY = touchEnd.y - touchStart.y;
+    const deltaTime = touchEnd.time - touchStart.time;
+    const velocity = Math.abs(deltaX) / deltaTime;
+    
+    // Determine if swipe should trigger card change
+    const shouldChangeCard = Math.abs(deltaX) > 100 || velocity > 0.5;
+    const isLeftSwipe = deltaX > 0;
 
-    // Only process horizontal swipes if they're more significant than vertical
-    if (Math.abs(distanceX) > Math.abs(distanceY)) {
-      if (isLeftSwipe) {
-        // Swipe left to go to next card
-        console.log('Next card swipe');
-      } else if (isRightSwipe) {
-        // Swipe right to go to previous card
-        console.log('Previous card swipe');
+    setIsDragging(false);
+
+    if (shouldChangeCard && Math.abs(deltaX) > Math.abs(deltaY)) {
+      setIsAnimating(true);
+      
+      // Animate current card out with "sucking" effect
+      setCardPosition({
+        x: isLeftSwipe ? window.innerWidth * 1.5 : -window.innerWidth * 1.5,
+        y: deltaY * 0.3,
+        rotation: isLeftSwipe ? 45 : -45,
+        scale: 0.5
+      });
+      
+      // Animate next/previous card to center
+      if (isLeftSwipe && prevCard) {
+        setPrevCardPosition({ x: 0, y: 0, rotation: 0, scale: 1 });
+      } else if (!isLeftSwipe && nextCard) {
+        setNextCardPosition({ x: 0, y: 0, rotation: 0, scale: 1 });
       }
+      
+      // Update index and positions after animation
+      setTimeout(() => {
+        setTransitionSpeed('0s');
+
+        let updated = false;
+        if (isLeftSwipe && currentIndex > 0) {
+          setCurrentIndex(currentIndex - 1);
+          updated = true;
+        } else if (!isLeftSwipe && currentIndex < cards.length - 1) {
+          setCurrentIndex(currentIndex + 1);
+          updated = true;
+        }
+
+        // Reset all positions to their stable states (will snap due to transitionSpeed = '0s')
+        setCardPosition({ x: 0, y: 0, rotation: 0, scale: 1 });
+        setNextCardPosition({ x: window.innerWidth, y: 0, rotation: 0, scale: 1 });
+        setPrevCardPosition({ x: -window.innerWidth, y: 0, rotation: 0, scale: 1 });
+        
+        setIsAnimating(false);
+        
+      }, 300);
+    } else {
+      // Not a swipe, or invalid swipe: Reset positions with animation (isDragging is false, transitionSpeed is '0.3s')
+      setCardPosition({ x: 0, y: 0, rotation: 0, scale: 1 });
+      setNextCardPosition({ x: window.innerWidth, y: 0, rotation: 0, scale: 1 });
+      setPrevCardPosition({ x: -window.innerWidth, y: 0, rotation: 0, scale: 1 });
     }
+    
+    setTouchStart(null);
+    setTouchEnd(null);
   };
 
   /**
@@ -130,29 +259,82 @@ const FlashcardStack = ({
   const textSizeClass = isLargeText ? 'text-lg' : 'text-base';
   const headlineSizeClass = isLargeText ? 'text-xl' : 'text-lg';
 
-  // Truncate content to prevent scrollbars - limit to approximately 8-10 lines
-  const maxContentLength = isLargeText ? 400 : 500;
-  const truncatedContent = currentCard.content.length > maxContentLength 
-    ? currentCard.content.substring(0, maxContentLength) + "..."
-    : currentCard.content;
-
   return (
-    <div className="relative">
+    <div className="relative overflow-hidden">
       {/* Main Card */}
       <div
-        className="relative h-96"
+        ref={cardRef}
+        className="relative"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <Card className={cn(
-          "w-full h-full border-0 shadow-2xl transition-all duration-200",
-          isDarkMode 
-            ? "bg-gradient-to-br from-gray-800 to-gray-900 text-gray-100" 
-            : "bg-gradient-to-br from-white to-blue-50",
-          isViewed && "opacity-95"
-        )}>
-          <CardContent className="p-6 h-full flex flex-col">
+        {/* Previous Card */}
+        {prevCard && (
+          <Card 
+            className={cn(
+              "w-full border-0 shadow-2xl transition-all duration-200 absolute top-0 left-0",
+              isDarkMode 
+                ? "bg-gradient-to-br from-gray-800 to-gray-900 text-gray-100" 
+                : "bg-gradient-to-br from-white to-blue-50"
+            )}
+            style={{
+              transform: `translate(${prevCardPosition.x}px, ${prevCardPosition.y}px) rotate(${prevCardPosition.rotation}deg) scale(${prevCardPosition.scale})`,
+              transition: isDragging ? 'none' : `transform ${transitionSpeed} cubic-bezier(0.4, 0, 0.2, 1)`,
+              zIndex: 5,
+              width: '100%'
+            }}
+          >
+            <CardContent className="p-6 flex flex-col">
+              <div className="flex justify-end items-start mb-4">
+                <div className={cn(
+                  "text-xs opacity-60",
+                  isDarkMode ? "text-gray-400" : "text-gray-500"
+                )}>
+                  Swipe to navigate
+                </div>
+              </div>
+              
+              <h2 className={cn(
+                "font-semibold mb-4 leading-tight",
+                headlineSizeClass,
+                isDarkMode ? "text-gray-100" : "text-gray-800"
+              )}>
+                {prevCard.headline}
+              </h2>
+
+              <div className="flex-1 mb-4">
+                <p className={cn(
+                  "leading-relaxed",
+                  textSizeClass,
+                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                )}>
+                  {prevCard.content}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Current Card */}
+        <Card 
+          ref={currentCardElementRef}
+          className={cn(
+            "w-full border-0 shadow-2xl transition-all duration-200 absolute top-0 left-0",
+            isDarkMode 
+              ? "bg-gradient-to-br from-gray-800 to-gray-900 text-gray-100" 
+              : "bg-gradient-to-br from-white to-blue-50",
+            isViewed && "opacity-95"
+          )}
+          style={{
+            transform: `translate(${cardPosition.x}px, ${cardPosition.y}px) rotate(${cardPosition.rotation}deg) scale(${cardPosition.scale})`,
+            transition: isDragging ? 'none' : `transform ${transitionSpeed} cubic-bezier(0.4, 0, 0.2, 1)`,
+            cursor: isDragging ? 'grabbing' : 'grab',
+            zIndex: 10,
+            width: '100%'
+          }}
+        >
+          <CardContent className="p-6 flex flex-col">
             <div className="flex justify-end items-start mb-4">
               <div className={cn(
                 "text-xs opacity-60",
@@ -178,42 +360,72 @@ const FlashcardStack = ({
                 textSizeClass,
                 isDarkMode ? "text-gray-200" : "text-gray-700"
               )}>
-                {truncatedContent}
+                {currentCard.content}
               </p>
             </div>
             
             {/* Card Actions */}
-            <CardActions
-              cardId={currentCard.id}
-              isBookmarked={isBookmarked}
-              onBookmarkToggle={onBookmarkToggle}
-              onDiveDeeper={onDiveDeeper}
-              onJumpToSource={onJumpToSource}
-              onAskAI={onAskAI}
-              deeperContent={currentCard.deeperContent}
-            />
+            <div className="relative z-20">
+              <CardActions
+                cardId={currentCard.id}
+                isBookmarked={isBookmarked}
+                onBookmarkToggle={onBookmarkToggle}
+                onDiveDeeper={onDiveDeeper}
+                onJumpToSource={onJumpToSource}
+                onAskAI={onAskAI}
+                deeperContent={currentCard.deeperContent}
+              />
+            </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Next Cards Preview */}
-      {currentIndex < cards.length - 1 && (
-        <div className="absolute top-2 left-2 right-2 h-96 -z-10">
-          <Card className={cn(
-            "w-full h-full border-0 shadow-lg transform rotate-1 scale-95",
-            isDarkMode ? "bg-gray-800/60" : "bg-white/60"
-          )} />
-        </div>
-      )}
-      
-      {currentIndex < cards.length - 2 && (
-        <div className="absolute top-4 left-4 right-4 h-96 -z-20">
-          <Card className={cn(
-            "w-full h-full border-0 shadow-md transform -rotate-1 scale-90",
-            isDarkMode ? "bg-gray-800/40" : "bg-white/40"
-          )} />
-        </div>
-      )}
+        {/* Next Card */}
+        {nextCard && (
+          <Card 
+            className={cn(
+              "w-full border-0 shadow-2xl transition-all duration-200 absolute top-0 left-0",
+              isDarkMode 
+                ? "bg-gradient-to-br from-gray-800 to-gray-900 text-gray-100" 
+                : "bg-gradient-to-br from-white to-blue-50"
+            )}
+            style={{
+              transform: `translate(${nextCardPosition.x}px, ${nextCardPosition.y}px) rotate(${nextCardPosition.rotation}deg) scale(${nextCardPosition.scale})`,
+              transition: isDragging ? 'none' : `transform ${transitionSpeed} cubic-bezier(0.4, 0, 0.2, 1)`,
+              zIndex: 5,
+              width: '100%'
+            }}
+          >
+            <CardContent className="p-6 flex flex-col">
+              <div className="flex justify-end items-start mb-4">
+                <div className={cn(
+                  "text-xs opacity-60",
+                  isDarkMode ? "text-gray-400" : "text-gray-500"
+                )}>
+                  Swipe to navigate
+                </div>
+              </div>
+              
+              <h2 className={cn(
+                "font-semibold mb-4 leading-tight",
+                headlineSizeClass,
+                isDarkMode ? "text-gray-100" : "text-gray-800"
+              )}>
+                {nextCard.headline}
+              </h2>
+
+              <div className="flex-1 mb-4">
+                <p className={cn(
+                  "leading-relaxed",
+                  textSizeClass,
+                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                )}>
+                  {nextCard.content}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };
